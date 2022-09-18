@@ -94,7 +94,7 @@ def plot_test():
 
 
 if __name__ == '__main__':
-    # plot_ng()
+    plot_ng()
     # plot_test()
     # ng_data_org()
     # plot_ng_new()

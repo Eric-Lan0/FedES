@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Python version: 3.6
+# Python version: 3.9
 
+import copy
 import torch
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
@@ -26,8 +27,8 @@ class LocalUpdate(object):
     def __init__(self, args, dataset, idxs, logger):
         self.args = args
         self.logger = logger
-        self.trainloader, self.validloader, self.testloader = self.train_val_test(dataset, list(idxs))
-        self.device = 'cuda' if args.gpu else 'cpu'
+        self.trainloader = self.train_val_test(dataset, list(idxs))
+        self.device = args.gpu if args.gpu else 'cpu'
         # Default criterion set to NLL loss function
         # self.criterion = nn.NLLLoss().to(self.device)
         self.criterion = nn.CrossEntropyLoss().to(self.device)
@@ -38,17 +39,17 @@ class LocalUpdate(object):
         and user indexes.
         """
         # split indexes for train, validation, and test (80, 10, 10)
-        idxs_train = idxs[:int(0.8*len(idxs))]
-        idxs_val = idxs[int(0.8*len(idxs)):int(0.9*len(idxs))]
-        idxs_test = idxs[int(0.9*len(idxs)):]
+        idxs_train = idxs[:int(1*len(idxs))]
+        # idxs_val = idxs[int(0.8*len(idxs)):int(0.9*len(idxs))]
+        # idxs_test = idxs[int(0.9*len(idxs)):]
 
         trainloader = DataLoader(DatasetSplit(dataset, idxs_train),
                                  batch_size=self.args.local_bs, shuffle=True)
-        validloader = DataLoader(DatasetSplit(dataset, idxs_val),
-                                 batch_size=int(len(idxs_val)/10), shuffle=False)
-        testloader = DataLoader(DatasetSplit(dataset, idxs_test),
-                                batch_size=int(len(idxs_test)/10), shuffle=False)
-        return trainloader, validloader, testloader
+        # validloader = DataLoader(DatasetSplit(dataset, idxs_val),
+        #                          batch_size=int(len(idxs_val)/10), shuffle=False)
+        # testloader = DataLoader(DatasetSplit(dataset, idxs_test),
+        #                         batch_size=int(len(idxs_test)/10), shuffle=False)
+        return trainloader
 
     def gen_noise(self, net, std):
         noises = []
@@ -71,9 +72,7 @@ class LocalUpdate(object):
     def explore_one_direction(self, net, data, std, if_mirror):
         inputs, targets = data
         noise = self.gen_noise(net, std)
-
         self.add_noise(net, noise)
-
         outputs = net(inputs)
 
         self.remove_noise(net, noise)
@@ -123,9 +122,10 @@ class LocalUpdate(object):
             param.grad = g
         return
 
-    def update_weights(self, model, global_round, std, num_directions=1):
+    def update_weights(self, model, global_round, std):
         # Set mode to train model
         model.train()
+        # number = 0
 
         for iter in range(self.args.local_ep):
             noise_list = []
@@ -133,12 +133,9 @@ class LocalUpdate(object):
             for batch_idx, (images, labels) in enumerate(self.trainloader):
                 images, labels = images.to(self.device), labels.to(self.device)
 
-                for _ in range(num_directions):
-                    l, noise = self.explore_one_direction(model, (images, labels), std, if_mirror=True)
-                    loss_list.append(l)
-                    noise_list.append(noise)
-                    # loss_list = l
-                    # noise_list = noise
+                l, noise = self.explore_one_direction(model, (images, labels), std, if_mirror=True)
+                loss_list.append(l)
+                noise_list.append(noise)
 
                 # model.zero_grad()
                 # log_probs = model(images)
@@ -154,6 +151,7 @@ class LocalUpdate(object):
                 # batch_loss.append(loss.item())
             # epoch_loss.append(sum(batch_loss)/len(batch_loss))
         length = len(loss_list)
+        # print(number)
         return noise_list, loss_list, length
 
     def ng_average_weights(self, model, walks, losses, length, std):
@@ -181,36 +179,59 @@ class LocalUpdate(object):
 
         return model.state_dict()
 
-    def ng_convention_average_weights(self, model, walks, losses, length, std, iter, SNR):
+    def bk_update_weights(self, model, global_round):
         # Set mode to train model
         model.train()
-        epoch_loss = []
+        gradients_epochs = []  # local_epochs, batches, gradients from each batch
+        for iter in range(self.args.local_ep):
+            gradients = []
+            for batch_idx, (images, labels) in enumerate(self.trainloader):
+                gradient = []
+                images, labels = images.to(self.device), labels.to(self.device)
+                outputs = model(images)
+                loss = self.criterion(outputs, labels)
+                loss.backward()
+                for parms in model.parameters():
+                    # print('parms.grad: ')
+                    # print(parms.grad.shape)
+                    gradient.append(parms.grad)
+                gradients.append(gradient)
+            gradients_epochs.append(gradients)
+        #     print('gradients', len(gradients))
+        # print('gradients_epochs:', len(gradients_epochs))
+        local_eps = len(gradients_epochs)
+        return gradients_epochs, local_eps
+
+    def bk_average_weights(self, model, gradients, local_eps):
+        # Set mode to train model
+        model.train()
         # Set optimizer for the local updates
         if self.args.optimizer == 'sgd':
-            optimizer = torch.optim.SGD(model.parameters(), lr=self.args.lr,
-                                        momentum=0.5)
+            optimizer = torch.optim.SGD(model.parameters(), lr=self.args.lr, momentum=0.5)
         elif self.args.optimizer == 'adam':
-            optimizer = torch.optim.Adam(model.parameters(), lr=self.args.lr,
-                                         weight_decay=1e-4)
+            optimizer = torch.optim.Adam(model.parameters(), lr=self.args.lr, weight_decay=1e-4)
         elif self.args.optimizer == 'RMSprop':
             optimizer = torch.optim.RMSprop(model.parameters(), lr=self.args.lr)
         elif self.args.optimizer == 'Adadelta':
-            optimizer = torch.optim.Adadelta(model.parameters(), lr=self.args.lr,
-                                             weight_decay=1e-4)
-        optimizer.zero_grad()
-        losses = torch.tensor(losses)
-        # print(losses.size())
-        P = torch.sum(losses ** 2) / torch.numel(losses)
-        V = P / SNR
-        losses_ave = torch.zeros((losses.size()))
-        for i in range(iter):
-            noise = torch.normal(0, torch.sqrt(V), size=losses.size()).to(self.device)
-            losses_rec = losses + noise
-            losses_rec = torch.div(losses_rec, iter)
-            losses_ave += losses_rec
+            optimizer = torch.optim.Adadelta(model.parameters(), lr=self.args.lr, weight_decay=1e-4)
 
-        elite_num = self.args.num_users * length
-        grad = self.get_es_grad(losses_ave, walks, elite_num, length, std)
+        optimizer.zero_grad()
+        # elite_num = self.args.num_users * local_eps
+        batches = len(gradients[0][0])
+        n = batches * local_eps * self.args.num_users
+        for idx in range(self.args.num_users):
+            for e in range(local_eps):
+                for b in range(batches):
+                    if idx == 0 and e == 0 and b == 0:
+                        grad = copy.deepcopy(gradients[0][0][0])
+                        for g in range(len(grad)):
+                            if grad[g] is not None:
+                                grad[g] /= n
+                    else:
+                        for g in range(len(gradients[idx][e][b])):
+                            if grad[g] is not None:
+                                grad[g] += (gradients[idx][e][b][g] / n)
+
         self.set_es_grad(model, grad)
         optimizer.step()
 
@@ -223,7 +244,7 @@ class LocalUpdate(object):
         loss, total, correct = 0.0, 0.0, 0.0
         i = 0
 
-        for batch_idx, (images, labels) in enumerate(self.testloader):
+        for batch_idx, (images, labels) in enumerate(self.trainloader):
             images, labels = images.to(self.device), labels.to(self.device)
 
             # Inference
@@ -248,7 +269,7 @@ def test_inference(args, model, test_dataset):
     model.eval()
     loss, total, correct = 0.0, 0.0, 0.0
 
-    device = 'cuda' if args.gpu else 'cpu'
+    device = args.gpu if args.gpu else 'cpu'
     criterion = nn.CrossEntropyLoss().to(device)
     # criterion = nn.NLLLoss().to(device)
     testloader = DataLoader(test_dataset, batch_size=128,
