@@ -38,7 +38,7 @@ if __name__ == '__main__':
     args.unequal = 0  # 0(equal) 1(unequal)
     args.lr = 0.01  # 0.01 0.005
     args.num_users = 10
-    args.local_bs = 128
+    args.local_bs = 32
     args.local_ep = 1
     args.epochs = 10000
     std = 0.01
