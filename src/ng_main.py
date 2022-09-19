@@ -40,7 +40,7 @@ if __name__ == '__main__':
     args.num_users = 10
     args.local_bs = 32
     args.local_ep = 1
-    args.epochs = 10000
+    args.epochs = 4000
     std = 0.01
 
     # load dataset and user groups
@@ -136,9 +136,9 @@ if __name__ == '__main__':
             print('Train Accuracy: {:.2f}% \n'.format(100*train_accuracy[-1]))
 
         if (epoch + 1) % 1000 == 0:
-            np.savetxt(('../save/ng_' + str(epoch) + args.model + '-bacth_' + args.local_bs + '-local_ep'
+            np.savetxt(('../save/ng_' + str(epoch) + args.model + '-bacth_' + str(args.local_bs) + '-local_ep'
                         + str(args.local_ep) + '-train_loss.txt'), train_loss)
-            np.savetxt(('../save/ng_' + str(epoch) + args.model + '-bacth_' + args.local_bs + '-local_ep'
+            np.savetxt(('../save/ng_' + str(epoch) + args.model + '-bacth_' + str(args.local_bs) + '-local_ep'
                         + str(args.local_ep) + '-train_accuracy.txt'), train_accuracy)
             torch.save(global_model, ('n_epoch' + str(epoch)))
             print('saved: ' + str(epoch))
@@ -164,22 +164,22 @@ if __name__ == '__main__':
     plt.figure()
     plt.title('Training Loss vs Communication rounds')
     plt.plot(range(len(train_loss)), train_loss, color='r')
-    np.savetxt(('../save/ng' + args.model + '-bacth_' + args.local_bs + '-local_ep' + str(args.local_ep)
+    np.savetxt(('../save/ng' + args.model + '-bacth_' + str(args.local_bs) + '-local_ep' + str(args.local_ep)
                 + '-train_loss.txt'), train_loss)
     plt.ylabel('Training loss')
     plt.xlabel('Communication Rounds')
     plt.show()
-    plt.savefig('../save/ng' + args.model + '-bacth_' + args.local_bs + '-local_ep' + str(args.local_ep)
+    plt.savefig('../save/ng' + args.model + '-bacth_' + str(args.local_bs) + '-local_ep' + str(args.local_ep)
                 + '-loss.png')
 
     # Plot Average Accuracy vs Communication rounds
     plt.figure()
     plt.title('Average Accuracy vs Communication rounds')
     plt.plot(range(len(train_accuracy)), train_accuracy, color='k')
-    np.savetxt(('../save/ng' + args.model + '-bacth_' + args.local_bs + '-local_ep' + str(args.local_ep)
+    np.savetxt(('../save/ng' + args.model + '-bacth_' + str(args.local_bs) + '-local_ep' + str(args.local_ep)
                 + '-train_accuracy.txt'), train_accuracy)
     plt.ylabel('Average Accuracy')
     plt.xlabel('Communication Rounds')
     plt.show()
-    plt.savefig('../save/ng' + args.model + '-bacth_' + args.local_bs + '-local_ep' + str(args.local_ep)
+    plt.savefig('../save/ng' + args.model + '-bacth_' + str(args.local_bs) + '-local_ep' + str(args.local_ep)
                 + '-acc.png')
