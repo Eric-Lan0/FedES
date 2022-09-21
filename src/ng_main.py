@@ -137,7 +137,7 @@ if __name__ == '__main__':
                         + str(args.local_ep) + '-train_loss.txt'), train_loss)
             np.savetxt(('../save/ng_' + str(epoch) + args.model + '-bacth' + str(args.local_bs) + '-local_ep'
                         + str(args.local_ep) + '-train_accuracy.txt'), train_accuracy)
-            torch.save(global_model, ('n_epoch' + str(epoch)))
+            torch.save(global_model, ('bk_non-iid_epoch' + str(epoch)))
             print('saved: ' + str(epoch))
             train_loss, train_accuracy = [], []
 
