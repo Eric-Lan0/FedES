@@ -34,13 +34,13 @@ if __name__ == '__main__':
     args.model = 'mlp'  # 'mlp' 'cnn'
     args.dataset = 'mnist'  # 'mnist' 'cifar'
     args.optimizer = 'sgd'  # 'RMSprop' 'Adadelta' 'sgd' 'adam'
-    args.iid = 1  # 0(non-iid) 1(iid)
+    args.iid = 0  # 0(non-iid) 1(iid)
     args.unequal = 0  # 0(equal) 1(unequal)
     args.lr = 0.01  # 0.01 0.005
     args.num_users = 10
-    args.local_bs = 32
+    args.local_bs = 6000  # 32 64 128 6000
     args.local_ep = 1
-    args.epochs = 4000
+    args.epochs = 5000
     std = 0.01
 
     # load dataset and user groups
@@ -75,13 +75,10 @@ if __name__ == '__main__':
 
     # Training
     train_loss, train_accuracy = [], []
-    # val_acc_list, net_list = [], []
-    # cv_loss, cv_acc = [], []
     print_every = 1
     val_loss_pre, counter = 0, 0
 
     for epoch in tqdm(range(args.epochs)):
-
         print(f'\n | Global Training Round : {epoch+1} |\n')
 
         global_model.train()
@@ -136,9 +133,9 @@ if __name__ == '__main__':
             print('Train Accuracy: {:.2f}% \n'.format(100*train_accuracy[-1]))
 
         if (epoch + 1) % 1000 == 0:
-            np.savetxt(('../save/ng_' + str(epoch) + args.model + '-bacth_' + str(args.local_bs) + '-local_ep'
+            np.savetxt(('../save/ng_' + str(epoch) + args.model + '-bacth' + str(args.local_bs) + '-local_ep'
                         + str(args.local_ep) + '-train_loss.txt'), train_loss)
-            np.savetxt(('../save/ng_' + str(epoch) + args.model + '-bacth_' + str(args.local_bs) + '-local_ep'
+            np.savetxt(('../save/ng_' + str(epoch) + args.model + '-bacth' + str(args.local_bs) + '-local_ep'
                         + str(args.local_ep) + '-train_accuracy.txt'), train_accuracy)
             torch.save(global_model, ('n_epoch' + str(epoch)))
             print('saved: ' + str(epoch))
@@ -148,38 +145,38 @@ if __name__ == '__main__':
     test_acc, test_loss = test_inference(args, global_model, test_dataset)
 
     print(f' \n Results after {args.epochs} global rounds of training:')
-    print("|---- Avg Train Accuracy: {:.2f}%".format(100*train_accuracy[-1]))
+    # print("|---- Avg Train Accuracy: {:.2f}%".format(100*train_accuracy[-1]))
     print("|---- Test Accuracy: {:.2f}%".format(100*test_acc))
 
     # Saving the objects train_loss and train_accuracy:
-    file_name = '../save/objects/{}_{}_{}_C[{}]_iid[{}]_E[{}]_B[{}].pkl'.\
-        format(args.dataset, args.model, args.epochs, args.frac, args.iid,
-               args.local_ep, args.local_bs)
-
-    with open(file_name, 'wb') as f:
-        pickle.dump([train_loss, train_accuracy], f)
+    # file_name = '../save/objects/{}_{}_{}_C[{}]_iid[{}]_E[{}]_B[{}].pkl'.\
+    #     format(args.dataset, args.model, args.epochs, args.frac, args.iid,
+    #            args.local_ep, args.local_bs)
+    #
+    # with open(file_name, 'wb') as f:
+    #     pickle.dump([train_loss, train_accuracy], f)
 
     print('\n Total Run Time: {0:0.4f}'.format(time.time()-start_time))
 
     plt.figure()
     plt.title('Training Loss vs Communication rounds')
     plt.plot(range(len(train_loss)), train_loss, color='r')
-    np.savetxt(('../save/ng' + args.model + '-bacth_' + str(args.local_bs) + '-local_ep' + str(args.local_ep)
+    np.savetxt(('../save/ng' + args.model + '-bacth' + str(args.local_bs) + '-local_ep' + str(args.local_ep)
                 + '-train_loss.txt'), train_loss)
     plt.ylabel('Training loss')
     plt.xlabel('Communication Rounds')
     plt.show()
-    plt.savefig('../save/ng' + args.model + '-bacth_' + str(args.local_bs) + '-local_ep' + str(args.local_ep)
+    plt.savefig('../save/ng' + args.model + '-bacth' + str(args.local_bs) + '-local_ep' + str(args.local_ep)
                 + '-loss.png')
 
     # Plot Average Accuracy vs Communication rounds
     plt.figure()
     plt.title('Average Accuracy vs Communication rounds')
     plt.plot(range(len(train_accuracy)), train_accuracy, color='k')
-    np.savetxt(('../save/ng' + args.model + '-bacth_' + str(args.local_bs) + '-local_ep' + str(args.local_ep)
+    np.savetxt(('../save/ng' + args.model + '-bacth' + str(args.local_bs) + '-local_ep' + str(args.local_ep)
                 + '-train_accuracy.txt'), train_accuracy)
     plt.ylabel('Average Accuracy')
     plt.xlabel('Communication Rounds')
     plt.show()
-    plt.savefig('../save/ng' + args.model + '-bacth_' + str(args.local_bs) + '-local_ep' + str(args.local_ep)
+    plt.savefig('../save/ng' + args.model + '-bacth' + str(args.local_bs) + '-local_ep' + str(args.local_ep)
                 + '-acc.png')

@@ -59,6 +59,6 @@ def args_parser():
     parser.add_argument('--stopping_rounds', type=int, default=10,
                         help='rounds of early stopping')
     parser.add_argument('--verbose', type=int, default=1, help='verbose')
-    parser.add_argument('--seed', type=int, default=2, help='random seed')
+    parser.add_argument('--seed', type=int, default=43, help='random seed')
     args = parser.parse_args()
     return args
