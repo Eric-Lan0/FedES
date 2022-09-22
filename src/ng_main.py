@@ -30,7 +30,7 @@ if __name__ == '__main__':
     else:
         device = 'cpu'
 
-    opt = 'backprop'  # 'es' 'backprop'
+    opt = 'es'  # 'es' 'bk'
     args.model = 'mlp'  # 'mlp' 'cnn'
     args.dataset = 'mnist'  # 'mnist' 'cifar'
     args.optimizer = 'sgd'  # 'RMSprop' 'Adadelta' 'sgd' 'adam'
@@ -38,7 +38,7 @@ if __name__ == '__main__':
     args.unequal = 0  # 0(equal) 1(unequal)
     args.lr = 0.01  # 0.01 0.005
     args.num_users = 10
-    args.local_bs = 6000  # 32 64 128 6000
+    args.local_bs = 64  # 32 64 128 6000
     args.local_ep = 1
     args.epochs = 5000
     std = 0.01
@@ -99,7 +99,7 @@ if __name__ == '__main__':
             # update global weights
             global_weights = local_model.ng_average_weights(global_model, local_walks, local_losses, length, std)
             global_model.load_state_dict(global_weights)
-        elif opt == 'backprop':
+        elif opt == 'bk':
             local_gradients = []
             for idx in range(idxs_users):
                 local_model = LocalUpdate(args=args, dataset=train_dataset,
@@ -137,7 +137,7 @@ if __name__ == '__main__':
                         + str(args.local_ep) + '-train_loss.txt'), train_loss)
             np.savetxt(('../save/ng_' + str(epoch) + args.model + '-bacth' + str(args.local_bs) + '-local_ep'
                         + str(args.local_ep) + '-train_accuracy.txt'), train_accuracy)
-            torch.save(global_model, ('bk_non-iid_epoch' + str(epoch)))
+            torch.save(global_model, ('es_non-iid_epoch' + str(epoch)))
             print('saved: ' + str(epoch))
             train_loss, train_accuracy = [], []
 
@@ -158,25 +158,25 @@ if __name__ == '__main__':
 
     print('\n Total Run Time: {0:0.4f}'.format(time.time()-start_time))
 
-    plt.figure()
-    plt.title('Training Loss vs Communication rounds')
-    plt.plot(range(len(train_loss)), train_loss, color='r')
-    np.savetxt(('../save/ng' + args.model + '-bacth' + str(args.local_bs) + '-local_ep' + str(args.local_ep)
-                + '-train_loss.txt'), train_loss)
-    plt.ylabel('Training loss')
-    plt.xlabel('Communication Rounds')
-    plt.show()
-    plt.savefig('../save/ng' + args.model + '-bacth' + str(args.local_bs) + '-local_ep' + str(args.local_ep)
-                + '-loss.png')
-
-    # Plot Average Accuracy vs Communication rounds
-    plt.figure()
-    plt.title('Average Accuracy vs Communication rounds')
-    plt.plot(range(len(train_accuracy)), train_accuracy, color='k')
-    np.savetxt(('../save/ng' + args.model + '-bacth' + str(args.local_bs) + '-local_ep' + str(args.local_ep)
-                + '-train_accuracy.txt'), train_accuracy)
-    plt.ylabel('Average Accuracy')
-    plt.xlabel('Communication Rounds')
-    plt.show()
-    plt.savefig('../save/ng' + args.model + '-bacth' + str(args.local_bs) + '-local_ep' + str(args.local_ep)
-                + '-acc.png')
+    # plt.figure()
+    # plt.title('Training Loss vs Communication rounds')
+    # plt.plot(range(len(train_loss)), train_loss, color='r')
+    # np.savetxt(('../save/ng' + args.model + '-bacth' + str(args.local_bs) + '-local_ep' + str(args.local_ep)
+    #             + '-train_loss.txt'), train_loss)
+    # plt.ylabel('Training loss')
+    # plt.xlabel('Communication Rounds')
+    # plt.show()
+    # plt.savefig('../save/ng' + args.model + '-bacth' + str(args.local_bs) + '-local_ep' + str(args.local_ep)
+    #             + '-loss.png')
+    #
+    # # Plot Average Accuracy vs Communication rounds
+    # plt.figure()
+    # plt.title('Average Accuracy vs Communication rounds')
+    # plt.plot(range(len(train_accuracy)), train_accuracy, color='k')
+    # np.savetxt(('../save/ng' + args.model + '-bacth' + str(args.local_bs) + '-local_ep' + str(args.local_ep)
+    #             + '-train_accuracy.txt'), train_accuracy)
+    # plt.ylabel('Average Accuracy')
+    # plt.xlabel('Communication Rounds')
+    # plt.show()
+    # plt.savefig('../save/ng' + args.model + '-bacth' + str(args.local_bs) + '-local_ep' + str(args.local_ep)
+    #             + '-acc.png')

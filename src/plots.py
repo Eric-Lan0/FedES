@@ -11,11 +11,11 @@ def plot_ng():
              'weight': 'normal',
              'size': 13}
     # plt.title('Training loss vs Communication rounds', font1)
-    # file_name = '../save/bk_iid_5000rounds_mlp-bacth6000-local_ep1-train_loss.txt'
+    # file_name = '../save/bk_iid_5000rounds_mlp_bacth6000_local-ep1_train-loss.txt'
     # data = np.loadtxt(file_name)
     # file_name_as = '../save/ngas-32-loss.txt'
     # data_as = np.loadtxt(file_name_as)
-    file_name_sdg = '../save/bk_iid_5000rounds_mlp-bacth6000-local_ep1-train_loss.txt'
+    file_name_sdg = '../save/bk_non-iid_5000rounds_mlp_bacth6000_local-ep1_train-loss.txt'
     data_sdg = np.loadtxt(file_name_sdg)
 
     plt.ticklabel_format(style='scientific', scilimits=(0, 0), axis='x', useMathText=True)
@@ -30,12 +30,12 @@ def plot_ng():
     plt.legend(prop=font2, framealpha=0.5, ncol=1)
     plt.grid()
     plt.show()
-    plt.savefig('../save/iid-loss.png')
+    plt.savefig('../save/non-iid-loss.png')
 
 
 def ng_data_org():
     name_1 = '../save/ng_'
-    name_2 = '999mlp-bacth6000-local_ep1-train_accuracy.txt'
+    name_2 = '999mlp-bacth6000-local_ep1-train_loss.txt'
     for i in range(5):
         if i > 0:
             file_name = name_1 + str(i) + name_2
@@ -44,7 +44,7 @@ def ng_data_org():
         else:
             file_name = name_1 + name_2
             data = np.loadtxt(file_name)
-    name = '../save/bk_iid_5000rounds_mlp-bacth6000-local_ep1-train_accuracy.txt'
+    name = '../save/bk_non-iid_5000rounds_mlp_bacth6000_local-ep1_train-loss.txt'
     np.savetxt(name, data)
 
 
