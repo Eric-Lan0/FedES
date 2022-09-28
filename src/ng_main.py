@@ -31,7 +31,7 @@ if __name__ == '__main__':
         device = 'cpu'
 
     opt = 'es'  # 'es' 'bk'
-    args.model = 'mlp'  # 'mlp' 'cnn'
+    args.model = 'mlp'  # 'mlp' 'cnn' 'load'
     args.dataset = 'mnist'  # 'mnist' 'cifar'
     args.optimizer = 'sgd'  # 'RMSprop' 'Adadelta' 'sgd' 'adam'
     args.iid = 0  # 0(non-iid) 1(iid)
@@ -46,7 +46,10 @@ if __name__ == '__main__':
     # load dataset and user groups
     train_dataset, test_dataset, user_groups = get_dataset(args)
     # BUILD MODEL
-    if args.model == 'cnn':
+    if args.model == 'load':
+        path = '../src/es_non-iid_epoch999'
+        global_model = torch.load(path)
+    elif args.model == 'cnn':
         # Convolutional neural netork
         if args.dataset == 'mnist':
             global_model = CNNMnist(args=args)
